@@ -20,6 +20,6 @@ endif()
 
 include_directories("/usr/local/include")
 include_directories(${SDL2_INCLUDE_DIRS})
-target_link_libraries(emu ${SDL2_LIBRARIES})
-target_link_libraries(emu ${SDL2_TTF_LIBRARIES})
+target_link_libraries(emu PUBLIC ${SDL2_LIBRARIES})
+target_link_libraries(emu PUBLIC ${SDL2_TTF_LIBRARIES})
 
