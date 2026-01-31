@@ -13,5 +13,19 @@
 // FF80	FFFE	High RAM (HRAM)	
 // FFFF	FFFF	Interrupt Enable register (IE)	
 
-u8 bus_read(u16 address);
-void bus_write(u16 address, u8 value);
+u8 bus_read(u16 address) {
+    if (address < 0x8000) {
+        return cart_read(address);
+    }
+
+    NO_IMPL;
+}
+
+void bus_write(u16 address, u8 value) {
+    if (address < 0x8000) {
+        cart_write(address, value);
+        return;
+    }
+
+    NO_IMPL;
+}
