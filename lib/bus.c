@@ -18,7 +18,8 @@ u8 bus_read(u16 address) {
         return cart_read(address);
     }
 
-    NO_IMPL;
+    printf("Bus read not implemented for address: %4.4X\n", address);
+    //NO_IMPL;
 }
 
 u16 bus_read16(u16 address) {
@@ -34,7 +35,8 @@ void bus_write(u16 address, u8 value) {
         return;
     }
 
-    NO_IMPL;
+    printf("Bus write not implemented for address: %4.4X\n", address);
+    //NO_IMPL;
 }
 
 void bus_write16(u16 address, u16 value) {
