@@ -40,5 +40,6 @@ IN_PROC inst_get_processor(in_type type);
 
 
 u16 cpu_read_reg(reg_type reg);
+void cpu_set_reg(reg_type rt, u16 val);
 
 void cpu_set_flags(cpu_context *ctx, char z, char n, char h, char c);

@@ -21,6 +21,13 @@ u8 bus_read(u16 address) {
     NO_IMPL;
 }
 
+u16 bus_read16(u16 address) {
+    u16 lo = bus_read(address);
+    u16 hi = bus_read(address + 1);
+
+    return (hi << 8) | lo;
+}
+
 void bus_write(u16 address, u8 value) {
     if (address < 0x8000) {
         cart_write(address, value);
@@ -28,4 +35,9 @@ void bus_write(u16 address, u8 value) {
     }
 
     NO_IMPL;
+}
+
+void bus_write16(u16 address, u16 value) {
+    bus_write(address, value & 0xFF);
+    bus_write(address + 1, (value >> 8) & 0xFF);
 }

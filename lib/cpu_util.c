@@ -27,3 +27,25 @@ u16 cpu_read_reg(reg_type rt) {
         default: return 0;
     }
 }
+
+void cpu_set_reg(reg_type rt, u16 val) {
+    switch(rt) {
+        case RT_A: ctx.regs.A = val & 0xFF; break;
+        case RT_F: ctx.regs.F = val & 0xFF; break;
+        case RT_B: ctx.regs.B = val & 0xFF; break;
+        case RT_C: ctx.regs.C = val & 0xFF; break; // note
+        case RT_D: ctx.regs.D = val & 0xFF; break;
+        case RT_E: ctx.regs.E = val & 0xFF; break;
+        case RT_H: ctx.regs.H = val & 0xFF; break;
+        case RT_L: ctx.regs.L = val & 0xFF; break;
+
+        case RT_AF: *((u16 *)&ctx.regs.A) = reverse(val); break;
+        case RT_BC: *((u16 *)&ctx.regs.B) = reverse(val); break;
+        case RT_DE: *((u16 *)&ctx.regs.D) = reverse(val); break;
+        case RT_HL: *((u16 *)&ctx.regs.H) = reverse(val); break; // note
+        
+        case RT_PC: ctx.regs.PC = val; break;
+        case RT_SP: ctx.regs.SP = val; break;
+        case RT_NONE: break;
+    }
+}

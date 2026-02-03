@@ -6,10 +6,10 @@ typedef enum {
     AM_IMP,
     AM_R_D16,
     AM_R_R,
-    AM_MR_R,
+    AM_MR_R,  // memory region and register
     AM_R,
     AM_R_D8,
-    AM_R_MR,
+    AM_R_MR, // register and memory region
     AM_R_HLI,
     AM_R_HLD,
     AM_HLI_R,
