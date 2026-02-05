@@ -91,6 +91,20 @@ static void proc_di(cpu_context *ctx) {
     ctx->int_master_enabled = false;
 }
 
+static void proc_ldh(cpu_context *ctx) {
+    // LDH instruction processing
+    if (ctx->cur_inst->reg_1 == RT_A) {
+        // LDH A, (a8). (a8) = 0xFF00 + a8
+        u16 addr = 0xFF00 | (ctx->fetched_data & 0xFF);
+        cpu_set_reg(ctx->cur_inst->reg_1, bus_read(addr));
+    } else {
+        // LDH (a8), A
+        u16 addr = 0xFF00 | (ctx->fetched_data & 0xFF);
+        bus_write(addr, ctx->regs.A);
+    }
+    emu_cycles(1);
+}
+
 static void proc_xor(cpu_context *ctx) {
     // XOR instruction processing
     ctx->regs.A ^= ctx->fetched_data & 0xFF;
@@ -102,6 +116,7 @@ static IN_PROC processors[] = {
     [IN_NONE] = proc_none, // IN_NONE
     [IN_NOP] = proc_nop, // IN_NOP
     [IN_LD] = proc_ld,
+    [IN_LDH] = proc_ldh,
     [IN_JP] = proc_jp,
     [IN_DI] = proc_di,
     [IN_XOR] = proc_xor,

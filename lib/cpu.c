@@ -37,10 +37,10 @@ bool cpu_step() {
         fetch_instruction();
         fetch_data();
 
-        printf("%4.4X: %-7s (%2.2X, %2.2X, %2.2X) A: %02X B: %02X C: %02X\n", 
+        printf("%4.4X: %-7s (%2.2X, %2.2X, %2.2X) A: %02X BC: %02X%02X DE: %02X%02X HL: %02X%02X\n", 
             pc, inst_name(ctx.cur_inst->type), 
-            ctx.cur_opcode, bus_read(pc+2), bus_read(pc+1),
-            ctx.regs.A,  ctx.regs.B, ctx.regs.C);
+            ctx.cur_opcode, bus_read(pc+1), bus_read(pc+2),
+            ctx.regs.A,  ctx.regs.B, ctx.regs.C, ctx.regs.D, ctx.regs.E, ctx.regs.H, ctx.regs.L);
 
         if (ctx.cur_inst == NULL) {
             printf("Invalid opcode: %2.2X at PC: %4.4X\n", ctx.cur_opcode, ctx.regs.PC - 1);
@@ -51,4 +51,12 @@ bool cpu_step() {
     }
 
     return true;
+}
+
+u8 cpu_get_ie_register() {
+    return ctx.ie_register;
+}
+
+void cpu_set_ie_register(u8 n) {
+    ctx.ie_register = n;
 }
