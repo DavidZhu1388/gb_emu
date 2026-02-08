@@ -1,6 +1,4 @@
 #include <cpu.h>
-#include <bus.h>
-#include <emu.h>
 
 cpu_context ctx = {0};
 
@@ -16,7 +14,7 @@ static void fetch_instruction() {
     
 }
 
-void fetch_data();
+void fetch_data(); // only cpu.c can access this
 
 static void execute() {
     IN_PROC proc = inst_get_processor(ctx.cur_inst->type);
