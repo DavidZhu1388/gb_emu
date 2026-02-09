@@ -46,7 +46,7 @@ void fetch_data() {
             ctx.mem_dest = cpu_read_reg(ctx.cur_inst->reg_1);
             ctx.dest_is_mem = true;
 
-            if (ctx.cur_inst->reg_1 == RT_C) {
+            if (ctx.cur_inst->reg_1 == RT_C) { //0xE2
                 ctx.mem_dest |= 0xFF00;
             }
 
@@ -55,7 +55,7 @@ void fetch_data() {
         case AM_R_MR: {
             u16 addr = cpu_read_reg(ctx.cur_inst->reg_2);
 
-            if (ctx.cur_inst->reg_2 == RT_C) {
+            if (ctx.cur_inst->reg_2 == RT_C) { // 0xF2
                 addr |= 0xFF00;
             }
 

@@ -35,10 +35,19 @@ bool cpu_step() {
         fetch_instruction();
         fetch_data();
 
-        printf("%4.4X: %-7s (%2.2X, %2.2X, %2.2X) A: %02X BC: %02X%02X DE: %02X%02X HL: %02X%02X\n", 
+        char flags[16]; 
+        sprintf(flags, "%c%c%c%c", 
+            ctx.regs.F & (1 << 7) ? 'Z' : '-',
+            ctx.regs.F & (1 << 6) ? 'N' : '-',
+            ctx.regs.F & (1 << 5) ? 'H' : '-',
+            ctx.regs.F & (1 << 4) ? 'C' : '-'
+        );
+
+        printf("%08lX - %4.4X: %-7s (%2.2X, %2.2X, %2.2X) A: %02X F: %s BC: %02X%02X DE: %02X%02X HL: %02X%02X\n", 
+            emu_get_context()->ticks,
             pc, inst_name(ctx.cur_inst->type), 
-            ctx.cur_opcode, bus_read(pc+1), bus_read(pc+2),
-            ctx.regs.A,  ctx.regs.B, ctx.regs.C, ctx.regs.D, ctx.regs.E, ctx.regs.H, ctx.regs.L);
+            ctx.cur_opcode, bus_read(pc+1), bus_read(pc+2), 
+            ctx.regs.A, flags, ctx.regs.B, ctx.regs.C, ctx.regs.D, ctx.regs.E, ctx.regs.H, ctx.regs.L);
 
         if (ctx.cur_inst == NULL) {
             printf("Invalid opcode: %2.2X at PC: %4.4X\n", ctx.cur_opcode, ctx.regs.PC - 1);
