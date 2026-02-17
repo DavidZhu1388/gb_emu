@@ -1,4 +1,6 @@
 #include <stack.h>
+#include <cpu.h>
+#include <bus.h>
 
 void stack_push(u8 data) {
     cpu_get_regs()->SP--;

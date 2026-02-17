@@ -1,4 +1,7 @@
 #include <cpu.h>
+#include <bus.h>
+#include <emu.h>
+#include <stack.h>
 
 //processes CPU instructions
 
@@ -166,6 +169,84 @@ static void proc_cb (cpu_context *ctx) { // need to clarify
     NO_IMPL
 }
 
+static void proc_rlca(cpu_context *ctx) {
+    u8 u = ctx->regs.A;
+    bool c = (u >> 7) & 1;
+    u = (u << 1) | c;
+
+    ctx->regs.A = u;
+
+    cpu_set_flags(ctx, 0, 0, 0, c);
+}
+
+static void proc_rrca(cpu_context *ctx) {
+    u8 b = ctx->regs.A & 1;
+    ctx->regs.A >>= 1;
+    ctx->regs.A |= (b << 7);
+    
+    cpu_set_flags(ctx, 0, 0, 0, b);
+}
+
+static void proc_rla(cpu_context *ctx) {
+    u8 u = ctx->regs.A;
+    u8 cf = CPU_FLAG_C;
+    u8 c = (u >> 7) & 1;
+
+    ctx->regs.A = (u << 1) | cf;
+    cpu_set_flags(ctx, 0, 0, 0, c);
+}
+
+static void proc_rra(cpu_context *ctx) {
+    u8 carry = CPU_FLAG_C;
+    u8 new_c = ctx->regs.A & 1;
+
+    ctx->regs.A >>= 1;
+    ctx->regs.A |= (carry << 7);
+
+    cpu_set_flags(ctx, 0, 0, 0, new_c);    
+}
+
+static void proc_stop(cpu_context *ctx) {
+    fprintf(stderr, "STOPPING \n");
+    NO_IMPL
+}
+
+static void proc_daa(cpu_context *ctx) { // decimal adjust accumulator
+    u8 u = 0;
+    int fc = 0;
+
+    if (CPU_FLAG_H || (!CPU_FLAG_N && (ctx->regs.A & 0xF) > 9)) {
+        u = 6;
+    }
+
+    if (CPU_FLAG_C || (!CPU_FLAG_N && ctx->regs.A > 0x99)) {
+        u |= 0x60;
+        fc = 1;
+    }
+
+    ctx->regs.A += CPU_FLAG_N ? -u : u;
+
+    cpu_set_flags(ctx, ctx->regs.A == 0, -1, 0, fc);
+}
+
+static void proc_cpl(cpu_context *ctx) {
+    ctx->regs.A = ~(ctx->regs.A);
+    cpu_set_flags(ctx, -1, 1, 1, -1);
+}
+
+static void proc_scf(cpu_context *ctx) {
+    cpu_set_flags(ctx, -1, 0, 0, 1);
+}
+
+static void proc_ccf(cpu_context *ctx) {
+    cpu_set_flags(ctx, -1, 0, 0, CPU_FLAG_C ^ 1);
+}
+
+static void proc_halt(cpu_context *ctx) {
+    ctx->halted = true;
+}
+
+
 static void proc_and(cpu_context *ctx) {
     ctx->regs.A &= ctx->fetched_data;
     cpu_set_flags(ctx, ctx->regs.A == 0, 0, 1, 0);
@@ -189,6 +270,10 @@ static void proc_cp(cpu_context *ctx) { // compare
 
 static void proc_di(cpu_context *ctx) {
     ctx->int_master_enabled = false;
+}
+
+static void proc_ei(cpu_context *ctx) {
+    ctx->enabling_ime = true;
 }
 
 static bool is_16_bit(reg_type rt) {
@@ -478,6 +563,17 @@ static IN_PROC processors[] = {
     [IN_OR] = proc_or,
     [IN_CP] = proc_cp,
     [IN_CB] = proc_cb,
+    [IN_RLCA] = proc_rlca,
+    [IN_RRCA] = proc_rrca,
+    [IN_RLA] = proc_rla,
+    [IN_RRA] = proc_rra,
+    [IN_STOP] = proc_stop,
+    [IN_DAA] = proc_daa,
+    [IN_CPL] = proc_cpl,
+    [IN_SCF] = proc_scf,
+    [IN_CCF] = proc_ccf,
+    [IN_HALT] = proc_halt,
+    [IN_EI] = proc_ei,
     [IN_RETI] = proc_reti
 
 };
