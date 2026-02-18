@@ -1,4 +1,6 @@
 #include <io.h>
+#include <cpu.h>
+#include <timer.h>
 
 static char serial_data[2];
 

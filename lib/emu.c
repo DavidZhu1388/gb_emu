@@ -47,6 +47,8 @@ void *cpu_run(void *p) {
 
         ctx.ticks++;
     }
+
+    return 0;
 }
 
 int emu_run(int argc, char **argv) {

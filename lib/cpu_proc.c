@@ -78,7 +78,7 @@ static void proc_cb (cpu_context *ctx) { // need to clarify
         
         case 3:
             //SET
-            reg_val |= 1 << bit;
+            reg_val |= (1 << bit);
             cpu_set_reg8(reg, reg_val);
             return;
         
@@ -119,8 +119,8 @@ static void proc_cb (cpu_context *ctx) { // need to clarify
             reg_val |= flagC;
 
             cpu_set_reg8(reg, reg_val);
-            cpu_set_flags(ctx, !reg_val, false, false, !!(old & 0x080));
-        }  return;
+            cpu_set_flags(ctx, !reg_val, false, false, !!(old & 0x80));
+        } return;
 
         case 3: {
             //RR
@@ -285,18 +285,23 @@ static void proc_ld(cpu_context *ctx) {
         // LD (BC), A  for example
         // write to memory
         if (is_16_bit(ctx->cur_inst->reg_2)) {
-            // if 16 bit register, write low byte
+            //if 16 bit register, write low byte
+            emu_cycles(1);
             bus_write16(ctx->mem_dest, ctx->fetched_data);
         } else {
             bus_write(ctx->mem_dest, ctx->fetched_data);
         }
+
+        emu_cycles(1);
         return;
     }
 
     if (ctx->cur_inst->mode == AM_HL_SPR) {
-        // special case LD (SPR), A
-        u8 hflag = cpu_read_reg(ctx->cur_inst->reg_2) & 0xF + (ctx->fetched_data & 0xF) >= 0x10;
-        u8 cflag = cpu_read_reg(ctx->cur_inst->reg_2) & 0xFF + (ctx->fetched_data & 0xFF) >= 0x100;
+        u8 hflag = (cpu_read_reg(ctx->cur_inst->reg_2) & 0xF) + 
+            (ctx->fetched_data & 0xF) >= 0x10;
+
+        u8 cflag = (cpu_read_reg(ctx->cur_inst->reg_2) & 0xFF) + 
+            (ctx->fetched_data & 0xFF) >= 0x100;
 
         cpu_set_flags(ctx, 0, 0, hflag, cflag);
         cpu_set_reg(ctx->cur_inst->reg_1, (cpu_read_reg(ctx->cur_inst->reg_2) + (char)ctx->fetched_data));
