@@ -5,7 +5,7 @@
 
 //processes CPU instructions
 
-void cpu_set_flags(cpu_context *ctx, char z, char n, char h, char c) {
+void cpu_set_flags(cpu_context *ctx, int8_t z, int8_t n, int8_t h, int8_t c) {
     if (z != -1) {
         BIT_SET(ctx->regs.F, 7, z);
     }
@@ -344,7 +344,7 @@ static void proc_jp(cpu_context *ctx) {
 }
 
 static void proc_jr(cpu_context *ctx) {
-    char rel = (char)(ctx->fetched_data & 0xFF);
+    int8_t rel = (char)(ctx->fetched_data & 0xFF);
     u16 addr = ctx->regs.PC + rel;
     goto_addr(ctx, addr, false);
 }
@@ -404,7 +404,7 @@ static void proc_push(cpu_context *ctx) {
     emu_cycles(1);
     stack_push(hi);
 
-    u16 lo = cpu_read_reg(ctx->cur_inst->reg_2) & 0xFF;
+    u16 lo = cpu_read_reg(ctx->cur_inst->reg_1) & 0xFF;
     emu_cycles(1);
     stack_push(lo);
 
@@ -465,7 +465,7 @@ static void proc_add(cpu_context *ctx) {
         emu_cycles(1);
     }
 
-    if (ctx->cur_inst->reg_1 == RT_SP && ctx->cur_inst->mode == AM_MR) {
+    if (ctx->cur_inst->reg_1 == RT_SP) {
         val = cpu_read_reg(ctx->cur_inst->reg_1) + (char)ctx->fetched_data;
     } 
 
@@ -514,14 +514,17 @@ static void proc_sub(cpu_context *ctx) {
     cpu_set_flags(ctx, z, 1, h, c);
 }
 
-static void proc_sbc(cpu_context *ctx) { // keep an eye
-    u8 val = cpu_read_reg(ctx->cur_inst->reg_1) - ctx->fetched_data - CPU_FLAG_C;
+static void proc_sbc(cpu_context *ctx) {
+    u8 val = ctx->fetched_data + CPU_FLAG_C;
 
-    int z = val == 0;
-    int h = ((int)cpu_read_reg(ctx->cur_inst->reg_1) & 0xF) - ((int)ctx->fetched_data & 0xF) - ((int)CPU_FLAG_C) < 0;
-    int c = ((int)cpu_read_reg(ctx->cur_inst->reg_1)) - ((int)ctx->fetched_data) - ((int)CPU_FLAG_C) < 0;
+    int z = cpu_read_reg(ctx->cur_inst->reg_1) - val == 0;
 
-    cpu_set_reg(ctx->cur_inst->reg_1, val);
+    int h = ((int)cpu_read_reg(ctx->cur_inst->reg_1) & 0xF) 
+        - ((int)ctx->fetched_data & 0xF) - ((int)CPU_FLAG_C) < 0;
+    int c = ((int)cpu_read_reg(ctx->cur_inst->reg_1)) 
+        - ((int)ctx->fetched_data) - ((int)CPU_FLAG_C) < 0;
+
+    cpu_set_reg(ctx->cur_inst->reg_1, cpu_read_reg(ctx->cur_inst->reg_1) - val);
     cpu_set_flags(ctx, z, 1, h, c);
 }
 
@@ -529,12 +532,10 @@ static void proc_ldh(cpu_context *ctx) {
     // LDH instruction processing
     if (ctx->cur_inst->reg_1 == RT_A) {
         // LDH A, (a8). (a8) = 0xFF00 + a8
-        u16 addr = 0xFF00 | (ctx->fetched_data & 0xFF);
-        cpu_set_reg(ctx->cur_inst->reg_1, bus_read(addr));
+        cpu_set_reg(ctx->cur_inst->reg_1, bus_read(0xFF00 | ctx->fetched_data));
     } else {
         // LDH (a8), A
-        u16 addr = 0xFF00 | (ctx->fetched_data & 0xFF);
-        bus_write(addr, ctx->regs.A);
+        bus_write(ctx->mem_dest, ctx->regs.A);
     }
     emu_cycles(1);
 }
