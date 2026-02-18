@@ -81,7 +81,6 @@ void fetch_data() {
             ctx.fetched_data = cpu_read_reg(ctx.cur_inst->reg_2);
             ctx.mem_dest = cpu_read_reg(ctx.cur_inst->reg_1);
             ctx.dest_is_mem = true;
-            emu_cycles(1);
             cpu_set_reg(RT_HL, cpu_read_reg(RT_HL) + 1);
             return;
         

@@ -2,6 +2,7 @@
 #include <bus.h>
 #include <emu.h>
 #include <interrupts.h>
+#include <dbg.h>
 
 cpu_context ctx = {0};
 
@@ -46,16 +47,21 @@ bool cpu_step() {
             ctx.regs.F & (1 << 4) ? 'C' : '-'
         );
 
-        printf("%08lX - %4.4X: %-7s (%2.2X, %2.2X, %2.2X) A: %02X F: %s BC: %02X%02X DE: %02X%02X HL: %02X%02X\n", 
+        char inst[16];
+        inst_to_str(&ctx, inst);
+
+        printf("%08lX - %04X: %-12s (%2.2X, %2.2X, %2.2X) A: %02X F: %s BC: %02X%02X DE: %02X%02X HL: %02X%02X\n", 
             emu_get_context()->ticks,
-            pc, inst_name(ctx.cur_inst->type), 
-            ctx.cur_opcode, bus_read(pc+1), bus_read(pc+2), 
+            pc, inst, ctx.cur_opcode, bus_read(pc+1), bus_read(pc+2), 
             ctx.regs.A, flags, ctx.regs.B, ctx.regs.C, ctx.regs.D, ctx.regs.E, ctx.regs.H, ctx.regs.L);
 
         if (ctx.cur_inst == NULL) {
             printf("Invalid opcode: %2.2X at PC: %4.4X\n", ctx.cur_opcode, ctx.regs.PC - 1);
             exit(-6);
         }
+
+        dbg_update();
+        dbg_print();
 
         execute();
     } else {

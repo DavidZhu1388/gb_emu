@@ -78,7 +78,7 @@ static void proc_cb (cpu_context *ctx) { // need to clarify
         
         case 3:
             //SET
-            reg_val |= ~(1 << bit);
+            reg_val |= 1 << bit;
             cpu_set_reg8(reg, reg_val);
             return;
         
@@ -92,8 +92,8 @@ static void proc_cb (cpu_context *ctx) { // need to clarify
             bool setC = false;
             u8 result = (reg_val << 1) & 0xFF;
 
-            if ((reg_val) & (1 << 7) != 0) { // if bit 7 is 1
-                result |= 1 ;
+            if ((reg_val & (1 << 7)) != 0) {
+                result |= 1;
                 setC = true;
             }
 

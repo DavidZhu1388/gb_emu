@@ -2,6 +2,7 @@
 #include <cart.h>
 #include <ram.h>
 #include <cpu.h>
+#include <io.h>
 
 // 0x0000 - 0x3FFF : ROM Bank 0
 // 0x4000 - 0x7FFF : ROM Bank 1 - Switchable
@@ -46,9 +47,7 @@ u8 bus_read(u16 address) {
     } else if (address < 0xFF80) {
         // I/O registers
         // TODO
-        printf("Bus read I/O not implemented at address: %4.4X\n", address);
-        //NO_IMPL;
-        return 0x0;
+        return io_read(address);
     } else if (address == 0xFFFF) {
         // CPU ENABLE REGISTER
         return cpu_get_ie_register();
@@ -90,8 +89,7 @@ void bus_write(u16 address, u8 value) {
     } else if (address < 0xFF80) {
         // I/O registers
         // TODO
-        printf("Bus write I/O not implemented at address: %4.4X\n", address);
-        //NO_IMPL;
+        io_write(address, value);
     } else if (address == 0xFFFF) {
         // CPU ENABLE REGISTER
         cpu_set_ie_register(value);
