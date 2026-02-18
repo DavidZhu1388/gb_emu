@@ -12,6 +12,14 @@ u8 io_read(u16 address) {
         return serial_data[1];
     }
 
+    if (BETWEEN(address, 0xFF04, 0xFF07)) {
+        return timer_read(address);
+    } 
+    
+    if (address == 0xFF0F) {
+        return cpu_get_int_flags();
+    }  
+
     printf("Bus read I/O not implemented at address: %4.4X\n", address);
     return 0;
 }
@@ -24,6 +32,16 @@ void io_write(u16 address, u8 value) {
 
     if (address == 0xFF02) {
         serial_data[1] = value;
+        return;
+    }
+
+    if (BETWEEN(address, 0xFF04, 0xFF07)) {
+        timer_write(address, value);
+        return;
+    }  
+
+    if (address == 0xFF0F) {
+        cpu_set_int_flags(value);
         return;
     }
 

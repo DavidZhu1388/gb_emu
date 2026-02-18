@@ -3,6 +3,7 @@
 #include <cart.h>
 #include <cpu.h>
 #include <ui.h>
+#include <timer.h>
 
 #include <pthread.h>
 #include <unistd.h>
@@ -26,6 +27,7 @@ emu_context *emu_get_context() {
 }
 
 void *cpu_run(void *p) {
+    timer_init();
     cpu_init();
 
     ctx.running = true;
@@ -78,5 +80,10 @@ int emu_run(int argc, char **argv) {
 }
 
 void emu_cycles(int cpu_cycles) {
-    // TODO
+    int n = cpu_cycles * 4;
+
+    for (int i = 0; i < n; i++) {
+        ctx.ticks++;
+        timer_tick();
+    }
 }
