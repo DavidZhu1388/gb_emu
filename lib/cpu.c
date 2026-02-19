@@ -48,6 +48,7 @@ bool cpu_step() {
         u16 pc = ctx.regs.PC;
 
         fetch_instruction();
+        emu_cycles(1); // fetch takes 1 cycle
         fetch_data();
 
         char flags[16]; 
