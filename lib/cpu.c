@@ -7,6 +7,8 @@
 
 cpu_context ctx = {0};
 
+#define CPU_DEBUG 0
+
 void cpu_init() {
     ctx.regs.PC = 0x100;
     ctx.regs.SP = 0xFFFE;
@@ -59,6 +61,7 @@ bool cpu_step() {
             ctx.regs.F & (1 << 4) ? 'C' : '-'
         );
 
+#if CPU_DEBUG == 1
         char inst[16];
         inst_to_str(&ctx, inst);
 
@@ -66,6 +69,7 @@ bool cpu_step() {
             emu_get_context()->ticks,
             pc, inst, ctx.cur_opcode, bus_read(pc+1), bus_read(pc+2), 
             ctx.regs.A, flags, ctx.regs.B, ctx.regs.C, ctx.regs.D, ctx.regs.E, ctx.regs.H, ctx.regs.L);
+#endif
 
         if (ctx.cur_inst == NULL) {
             printf("Invalid opcode: %2.2X at PC: %4.4X\n", ctx.cur_opcode, ctx.regs.PC - 1);

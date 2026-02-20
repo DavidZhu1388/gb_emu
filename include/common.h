@@ -4,7 +4,6 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 
 typedef uint8_t u8;
 typedef uint16_t u16;
@@ -17,6 +16,7 @@ typedef uint64_t u64;
 
 #define BETWEEN(a, b, c) ((a >= b) && (a <= c))
 
+u32 get_ticks();
 void delay(u32 ms);
 
 #define NO_IMPL { fprintf(stderr, "No implementation at %s:%d\n"); exit(-5); }
