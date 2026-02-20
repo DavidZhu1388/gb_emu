@@ -3,6 +3,8 @@
 #include <ram.h>
 #include <cpu.h>
 #include <io.h>
+#include <ppu.h>
+#include <dma.h>
 
 // 0x0000 - 0x3FFF : ROM Bank 0
 // 0x4000 - 0x7FFF : ROM Bank 1 - Switchable
@@ -23,9 +25,7 @@ u8 bus_read(u16 address) {
         return cart_read(address);
     } else if (address < 0xA000) {
         // char/ map data
-        // TODO
-        printf("Bus read CHR/Map data not implemented at address: %4.4X\n", address);
-        NO_IMPL;
+        return ppu_vram_read(address);
     } else if (address < 0xC000) {
         // cartridge RAM
         return cart_read(address);
@@ -37,16 +37,16 @@ u8 bus_read(u16 address) {
         return 0;
     } else if (address < 0xFEA0) {
         // OAM
-        // TODO
-        printf("Bus read OAM not implemented at address: %4.4X\n", address);
-        //NO_IMPL;
-        return 0x0;
+        if (dma_transferring()) {
+            printf("Warning: OAM read during DMA transfer at address: %4.4X\n", address);
+            return 0xFF; // during DMA transfer, OAM is inaccessible and reads as 0xFF
+        }
+        return ppu_oam_read(address);
     } else if (address < 0xFF00) {
         // reserved - unusable
         return 0;
     } else if (address < 0xFF80) {
         // I/O registers
-        // TODO
         return io_read(address);
     } else if (address == 0xFFFF) {
         // CPU ENABLE REGISTER
@@ -68,9 +68,7 @@ void bus_write(u16 address, u8 value) {
         cart_write(address, value);
     } else if (address < 0xA000) {
         // char/ map data
-        // TODO
-        printf("Bus write CHR/Map data not implemented at address: %4.4X\n", address);
-        // NO_IMPL;
+        ppu_vram_write(address, value);
     } else if (address < 0xC000) {
         // cartridge RAM
         cart_write(address, value);
@@ -81,14 +79,15 @@ void bus_write(u16 address, u8 value) {
         // reserved - echo RAM
     } else if (address < 0xFEA0) {
         // OAM
-        // TODO
-        printf("Bus write OAM not implemented at address: %4.4X\n", address);
-        // NO_IMPL;
+        if (dma_transferring()) {
+            printf("Warning: OAM write during DMA transfer at address: %4.4X\n", address);
+            return; // during DMA transfer, OAM is inaccessible and writes are ignored
+        }
+        return ppu_oam_write(address, value);
     } else if (address < 0xFF00) {
         // reserved - unusable 
     } else if (address < 0xFF80) {
         // I/O registers
-        // TODO
         io_write(address, value);
     } else if (address == 0xFFFF) {
         // CPU ENABLE REGISTER
