@@ -3,9 +3,6 @@
 #include <string.h>
 #include <ppu_sm.h>
 
-void pipeline_fifo_reset();
-void pipeline_process();
-
 static ppu_context ctx;
 
 ppu_context *ppu_get_context() {

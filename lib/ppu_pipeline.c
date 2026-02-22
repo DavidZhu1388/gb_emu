@@ -134,7 +134,7 @@ void pipeline_process() {
 
 void pipeline_fifo_reset() {
     while(ppu_get_context()->pfc.pixel_fifo.size) {
-        pixel_fifo_pop;
+        pixel_fifo_pop();
     }
 
     ppu_get_context()->pfc.pixel_fifo.head = 0;

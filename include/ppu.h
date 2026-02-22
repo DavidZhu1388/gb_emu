@@ -37,7 +37,6 @@ typedef struct {
     u8 map_y;
     u8 map_x;
     u8 tile_y;
-    u8 tile_x;
     u8 fifo_x;
 } pixel_fifo_context;
 

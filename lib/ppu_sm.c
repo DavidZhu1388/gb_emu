@@ -5,6 +5,9 @@
 #include <string.h>
 #include <cart.h>
 
+void pipeline_fifo_reset();
+void pipeline_process();
+
 void increment_ly() {
     lcd_get_context()->ly++;
 
@@ -38,7 +41,7 @@ void ppu_mode_xfer() {
     pipeline_process();
 
     // During this mode, the PPU reads from VRAM to render the current line. The PPU also reads from OAM to render sprites on top of the background.
-    if (ppu_get_context()->line_ticks >= XRES) {
+    if (ppu_get_context()->pfc.pushed_x >= XRES) {
         pipeline_fifo_reset();
 
         LCDS_MODE_SET(MODE_HBLANK);
