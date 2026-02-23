@@ -1,6 +1,7 @@
 #include <ppu.h>
 #include <lcd.h>
 #include <bus.h>
+#include <string.h>
 
 void pixel_fifo_push(u32 value) {
     fifo_entry *next = malloc(sizeof(fifo_entry));
@@ -34,6 +35,51 @@ u32 pixel_fifo_pop() {
     return val;
 }
 
+u32 fetch_sprite_pixels(int bit, u32 color, u8 bg_color) {
+    for (int i=0; i<ppu_get_context()->fetched_entry_count; i++) {
+        int sp_x = (ppu_get_context()->fetched_entries[i].x - 8) + 
+                (lcd_get_context()->scroll_x % 8);
+        if (sp_x + 8 < ppu_get_context()->pfc.fifo_x) {
+            // past pixel point already...
+            continue;
+        } 
+
+        int offset = ppu_get_context()->pfc.fifo_x - sp_x;
+
+        if (offset < 0 || offset > 7) {
+            //out of bounds
+            continue;
+        }
+
+        bit = (7 - offset);
+        if (ppu_get_context()->fetched_entries[i].f_x_flip) {
+            bit = offset;
+        }
+
+        u8 lo = !!(ppu_get_context()->pfc.fetch_entry_data[ i*2 ] & (1 << bit));
+        u8 hi = !!(ppu_get_context()->pfc.fetch_entry_data[ (i*2) + 1] & (1 << bit)) << 1;
+
+        bool bg_priority = ppu_get_context()->fetched_entries[i].f_bgp;
+
+        if (!(hi | lo)) { 
+            // if transparent
+            continue;
+        }
+
+        if (!bg_priority || bg_color == 0) { 
+            color = (ppu_get_context()->fetched_entries[i].f_pn) ? 
+                lcd_get_context()->sp2_colors[hi | lo] : lcd_get_context()->sp1_colors[hi | lo];
+
+            if (hi|lo) {
+                break; 
+                // it is a value that we want to display
+            }
+        }
+    }
+
+    return color;
+}
+
 bool pipeline_fifo_add() {
     if (ppu_get_context()->pfc.pixel_fifo.size > 8) {
         // fifo is full!
@@ -48,6 +94,14 @@ bool pipeline_fifo_add() {
         u8 hi = !!(ppu_get_context()->pfc.bgw_fetch_data[2] & (1 << bit)) << 1;
         u32 color = lcd_get_context()->bg_colors[hi | lo];
 
+        if (!LCDC_BGW_ENABLE) {
+            color = lcd_get_context()->bg_colors[0]; //grab the first background color instead
+        }
+
+        if (LCDC_OBJ_ENABLE) {
+            color = fetch_sprite_pixels(bit, color, hi | lo);
+        }
+
         if (x >= 0) {
             pixel_fifo_push(color);
             ppu_get_context()->pfc.fifo_x++;
@@ -58,9 +112,54 @@ bool pipeline_fifo_add() {
     return true;
 }
 
+void pipeline_load_sprite_tile() {
+    oam_line_entry *le = ppu_get_context()->line_sprites;
+
+    while (le) {
+        int sp_x = (le->entry.x - 8) + (lcd_get_context()->scroll_x % 8);
+
+        if ((sp_x >= ppu_get_context()->pfc.fetch_x && sp_x < ppu_get_context()->pfc.fetch_x + 8) ||
+            ((sp_x + 8) >= ppu_get_context()->pfc.fetch_x && (sp_x + 8) < ppu_get_context()->pfc.fetch_x + 8)) {
+                //need to add entry
+                ppu_get_context()->fetched_entries[ppu_get_context()->fetched_entry_count++] = le->entry;
+        }
+
+        le = le->next;
+
+        if (!le || ppu_get_context()->fetched_entry_count >= 3) {
+            //max checking 3 sprites on pixels
+            break;
+        }
+    }
+}
+
+void pipeline_load_sprite_data(u8 offset) {
+    int cur_y = lcd_get_context()->ly;
+    u8 sprite_height = LCDC_OBJ_HEIGHT;
+
+    for (int i=0; i<ppu_get_context()->fetched_entry_count; i++) {
+        u8 ty = ((cur_y + 16) - ppu_get_context()->fetched_entries[i].y) * 2;
+
+        if (ppu_get_context()->fetched_entries[i].f_y_flip) {
+            //flipped upside down
+            ty = ((sprite_height * 2) - 2) - ty;
+        }
+
+        u8 tile_index = ppu_get_context()->fetched_entries[i].tile;
+
+        if (sprite_height == 16) {
+            tile_index &= ~(1); //remove last bit
+        }
+
+        ppu_get_context()->pfc.fetch_entry_data[ (i*2) + offset] = bus_read(0x8000 + (tile_index*16) + ty + offset);
+    }
+}
+
 void pipeline_fetch() {
     switch (ppu_get_context()->pfc.cur_fetch_state) {
         case FS_TILE: {
+            ppu_get_context()->fetched_entry_count = 0;
+
             if (LCDC_BGW_ENABLE) {
                 ppu_get_context()->pfc.bgw_fetch_data[0] = bus_read(LCDC_BG_MAP_AREA +
                     (ppu_get_context()->pfc.map_x / 8) + 
@@ -71,6 +170,10 @@ void pipeline_fetch() {
                 }
             }
 
+            if (LCDC_OBJ_ENABLE && ppu_get_context()->line_sprites) {
+                pipeline_load_sprite_tile();
+            }
+
             ppu_get_context()->pfc.cur_fetch_state = FS_DATA0;
             ppu_get_context()->pfc.fetch_x += 8;
         } break;
@@ -79,6 +182,8 @@ void pipeline_fetch() {
             ppu_get_context()->pfc.bgw_fetch_data[1] = bus_read(LCDC_BGW_DATA_AREA +
                 (ppu_get_context()->pfc.bgw_fetch_data[0] * 16) + 
                 ppu_get_context()->pfc.tile_y);
+
+            pipeline_load_sprite_data(0);
                 
             ppu_get_context()->pfc.cur_fetch_state = FS_DATA1;
         } break;
@@ -86,6 +191,8 @@ void pipeline_fetch() {
             ppu_get_context()->pfc.bgw_fetch_data[2] = bus_read(LCDC_BGW_DATA_AREA +
                 (ppu_get_context()->pfc.bgw_fetch_data[0] * 16) + 
                 ppu_get_context()->pfc.tile_y + 1);
+
+            pipeline_load_sprite_data(1);
                 
             ppu_get_context()->pfc.cur_fetch_state = FS_IDLE;
 
