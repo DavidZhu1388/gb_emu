@@ -1,32 +1,114 @@
-Inspired by https://github.com/rockytriton/LLD_gbemu
+# Game Boy Emulator (C)
 
-Important References:
+A Game Boy emulator written in **C** that recreates the hardware architecture
+of the original Nintendo Game Boy, including CPU execution, memory bus
+mapping, PPU rendering pipeline, and DMA transfers.
 
-https://gbdev.io/pandocs/
+This project was built as a systems programming exercise to better understand
+low-level hardware behavior such as memory-mapped IO, cycle-based execution,
+and graphics pipelines.
 
-https://www.pastraiser.com/cpu/gameboy/gameboy_opcodes.html
+---
 
-https://archive.org/details/GameBoyProgManVer1.1/page/n85/mode/2up
+## Demo
 
-https://github.com/rockytriton/LLD_gbemu/raw/main/docs/The%20Cycle-Accurate%20Game%20Boy%20Docs.pdf
+![Demo](docs/demo.gif)
 
-https://github.com/rockytriton/LLD_gbemu/raw/main/docs/gbctr.pdf
+Video demo:  
+https://youtu.be/3SjgRcNA9LI
 
+---
 
-NOTE: Designed to run on Linux, but you can build on Windows with MSYS2 and mingw-w64
+## Features
 
-Windows Environment Setup:
+Current functionality:
 
-1. Install MSYS2:  https://www.msys2.org/
+- Game Boy CPU instruction execution
+- Memory bus emulation
+- Background and sprite rendering
+- Window rendering
+- DMA sprite transfers
+- Game input via keyboard
+- Save state loading
 
-2. Follow instructions 1 through 7 on the MSYS2 page.
+Planned:
 
-3. pacman -S cmake
+- Sound emulation
+- Additional hardware accuracy improvements
 
-4. pacman -S mingw64/mingw-w64-x86_64-SDL2 mingw64/mingw-w64-x86_64-SDL2_mixer mingw64/mingw-w64-x86_64-SDL2_image mingw64/mingw-w64-x86_64-SDL2_ttf mingw64/mingw-w64-x86_64-SDL2_net
+---
 
-5. pacman -S mingw-w64-x86_64-check
+## Architecture
 
-After above steps you should be able to build from Windows using MSYS2 just like in the videos.
+The emulator models several subsystems of the original Game Boy hardware.
 
+### CPU
 
+Implements the **Game Boy LR35902 processor**, executing instructions from
+ROM while maintaining cycle counts used by other hardware components.
+
+### Memory Bus
+
+The emulator routes memory reads and writes through a central bus which maps
+addresses to the appropriate hardware component.
+
+| Address Range | Component |
+|---------------|-----------|
+| 0x0000–0x7FFF | ROM |
+| 0x8000–0x9FFF | VRAM |
+| 0xA000–0xBFFF | Cartridge RAM |
+| 0xC000–0xDFFF | WRAM |
+| 0xFE00–0xFE9F | OAM (sprite memory) |
+| 0xFF00–0xFF7F | IO Registers |
+| 0xFF80–0xFFFE | HRAM |
+
+### PPU (Graphics)
+
+The emulator reproduces the Game Boy **scanline rendering pipeline**, which
+renders the display line-by-line.
+
+Each scanline progresses through the following modes:
+
+- **OAM Search** – identify sprites on the current scanline
+- **Pixel Transfer** – fetch background and sprite pixels
+- **HBlank** – horizontal blank period
+- **VBlank** – vertical blank period after frame rendering
+
+Graphics rendering uses a **pixel FIFO pipeline** to process background,
+window, and sprite pixels.
+
+### DMA
+
+DMA transfers allow rapid copying of sprite data from memory into OAM,
+replicating the Game Boy's hardware sprite loading behavior.
+
+---
+
+## Controls
+
+| Key | Game Boy Button |
+|----|----|
+| Z | A |
+| X | B |
+| Enter | Start |
+| Tab | Select |
+| Arrow Keys | D-Pad |
+
+---
+
+## Building the Project
+
+### Linux
+
+Requirements:
+
+- CMake
+- SDL2
+
+Build:
+
+```bash
+mkdir build
+cd build
+cmake ..
+make
